@@ -3,7 +3,10 @@ use std::io::Write as _;
 use std::process::Command;
 
 fn main() {
-    let content = r#"
+    let rust_msg = "This is a rust string!\n";
+
+    let content = format!(
+        r#"
         bits 64
         default rel
 
@@ -14,13 +17,23 @@ fn main() {
         mov rdi, 1
         mov rax, 1
         syscall
+
+        mov rdx, {rust_len}
+        mov rsi, {rust_ptr}
+        mov rdi, 1
+        mov rax, 1
+        syscall
+
         ret
 
         section .data
 
         msg_ptr db "Hello, world!", 0x0a
         msg_len equ $ - msg_ptr
-    "#;
+        "#,
+        rust_ptr = rust_msg.as_ptr() as usize,
+        rust_len = rust_msg.len(),
+    );
 
     let mut in_file = tempfile::NamedTempFile::new().unwrap();
     let mut out_file = tempfile::NamedTempFile::new().unwrap();
