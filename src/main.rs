@@ -10,7 +10,7 @@ fn main() {
         bits 64
         default rel
 
-        section .text
+        push rbx
 
         mov rdx, msg_len
         lea rsi, [msg_ptr]
@@ -24,15 +24,19 @@ fn main() {
         mov rax, 1
         syscall
 
-        ret
+        mov rax, {rust_fn}
+        call rax
 
-        section .data
+        pop rbx
+
+        ret
 
         msg_ptr db "Hello, world!", 0x0a
         msg_len equ $ - msg_ptr
         "#,
         rust_ptr = rust_msg.as_ptr() as usize,
         rust_len = rust_msg.len(),
+        rust_fn = rust_fn as usize,
     );
 
     let mut in_file = tempfile::NamedTempFile::new().unwrap();
@@ -87,7 +91,11 @@ fn main() {
         )
     };
 
-    let func: fn() = unsafe { std::mem::transmute(xpage) };
+    let func: extern "C" fn() = unsafe { std::mem::transmute(xpage) };
 
     func();
+}
+
+extern "C" fn rust_fn() {
+    println!("This is a rust function, called by assembly!");
 }
